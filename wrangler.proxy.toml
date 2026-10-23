@@ -1,0 +1,4 @@
+
+name = "anime-scout-proxy"
+main = "cloudflare/sakuga-proxy.js"
+compatibility_date = "2026-10-23"
