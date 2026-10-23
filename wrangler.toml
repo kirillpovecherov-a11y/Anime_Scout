@@ -1,0 +1,5 @@
+name = "anime-scout-api"
+main = "worker.mjs"
+compatibility_date = "2026-10-01"
+[vars]
+ALLOWED_ORIGIN = "https://kirillpovecherov-a11y.github.io"
