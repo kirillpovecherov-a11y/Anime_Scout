@@ -23,3 +23,19 @@ CORS restricts browser origins, **not non-browser callers**. Before exposing thi
 ## Tests
 
 Node.js 22+: `npm test` (no dependencies). Tests stub YouTube HTTP responses and cover deduplication/pagination, ten-result limit, durations, empty results, upstream errors, origin/input/missing-key checks, browser result integration, repeated searches preserving saved approvals, local persistence payloads, error/empty UI messages and existing inline script syntax. They make no external calls. Real iPhone rendering, Google credentials and live results require the manual setup above.
+
+## Sakugabooru tag search
+
+The independent Sakugabooru section searches `https://www.sakugabooru.com/post.json?tags=berserk&limit=10` directly from the browser (no key/proxy/backend). Choose a target of 10–20 scenes; this also sets the API result limit. API results can include images, so fewer video cards may appear. Cards retain ID, post/file/preview URLs, file extension, dimensions and size. Only HTTPS Sakugabooru media URLs are accepted. YouTube search and its separate Worker are unchanged.
+
+Select scenes with checkboxes, then approve or reject independently. Rejection removes selection. The target limits selection, but a partial selection may be exported. The summary adds known durations and explicitly counts unknown ones. Search merges by post ID without overwriting decisions. “Все сохранённые” includes previous searches. State is local to this browser under `anime-scout-sakuga-v1`; storage errors are shown. This state is separate from the older library JSON backup.
+
+Press “Определить длительность” on a card to request HTML5 `preload=metadata`. Playback is never started. Finite positive metadata duration is saved; media error, access/CORS failure, unsupported codec or 12-second timeout gives “не определено” without blocking other cards. Media is detached afterwards. Browsers control metadata loading: preload is a hint, **not a guarantee of range-only transfer**. There is no full-video fetch/blob, media save or automatic metadata request. If avoiding any possible full transfer is essential, do not press the metadata button. A generic media error cannot reliably distinguish CORS from codec/network/access errors.
+
+The JSON manifest contains only selected **and approved** cards, source metadata, measured duration (or null), totals, `rights: unverified`, and `download_requested: false`. Export is not permission to download, nor a download job. No video downloading or integrations with editors/storage are added.
+
+If API CORS/network/access fails, the UI reports it and keeps saved cards; no proxy bypass or retries are performed. API access confirmed on an iPhone does not by itself confirm cross-origin fetch from GitHub Pages. Live Sakugabooru API/media access has not been verified in this restricted environment.
+
+Additional tests: `node test/sakuga.test.mjs`. Browser smoke tests: install Python Playwright in a development environment and run `python test/mobile_sakuga.py` with Chromium available (or `CHROMIUM_PATH`). These tests use fixtures and intercept all remote traffic; no source video is transferred. Test actual iPhone Safari separately for API CORS, preview availability and real metadata before claiming live support.
+
+Validation in this session: 4 Sakugabooru unit tests and 5 existing YouTube tests passed. Chromium responsive smoke execution was attempted but the sandbox blocked socket operations (Operation not permitted); a retry with additional permissions was interrupted. The mobile test is provided but has not been confirmed passing. Actual iPhone Safari rendering and live source access remain unverified.
