@@ -100,10 +100,10 @@ const Sakuga = (() => {
     const tags=get('sakugaTags').value.trim();if(!tags || tags.length>200){message.textContent='Введите теги (до 200 символов).';return;}
     busy=true;get('sakugaSearch').disabled=true;message.textContent='Поиск…';
     try {
-      const url=new URL('https://www.sakugabooru.com/post.json');url.search=new URLSearchParams({tags,limit:String(state.target)});
+      const url=new URL('https://anime-scout-proxy.kirillpovecherov.workers.dev/posts');url.search=new URLSearchParams({tags,limit:String(state.target)});
       const response=await fetch(url,{credentials:'omit',signal:AbortSignal.timeout(15000)});
       if(!response.ok)throw Error(`Источник недоступен (HTTP ${response.status}). Повторные запросы не выполняются.`);
-      const posts=await response.json();if(!Array.isArray(posts))throw Error('Некорректный ответ источника.');
+      const payload=await response.json();if(!payload || payload.ok!==true || !Array.isArray(payload.posts))throw Error(payload?.error ? `Ошибка прокси: ${payload.error}` : 'Некорректный ответ прокси.');const posts=payload.posts;
       const normalized=posts.map(Sakuga.normalize).filter(Boolean);visible=[...new Set(normalized.map(p=>p.id))];Sakuga.merge(state.items,posts);persist();render();
       message.textContent=visible.length?`Видеопостов: ${visible.length}. Решения сохранены; поиск может вернуть меньше цели. Длительность читается отдельно по кнопке.`:'Видеопосты не найдены (изображения исключены).';
     }catch(error){message.textContent=error instanceof TypeError?'Не удалось получить API: возможны CORS, сеть или ограничение доступа. Сохранённые карточки доступны.':error.name==='TimeoutError'?'Источник не ответил вовремя. Сохранённые карточки доступны.':error.message;}
