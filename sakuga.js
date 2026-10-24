@@ -110,11 +110,38 @@ const Sakuga = (() => {
     finally{busy=false;get('sakugaSearch').disabled=false;}
   };
   get('sakugaSaved').onclick=()=>{visible=state.items.map(p=>p.id);render();};
+  function exportManifest() {
+    const data=Sakuga.manifest(state);
+    if(!data.items.length){message.textContent='Выберите и одобрите материалы для экспорта.';return null;}
+    return new File([JSON.stringify(data,null,2)],'anime_scout_sakugabooru_manifest.json',{type:'application/json'});
+  }
+  function downloadManifest(file) {
+    const url=URL.createObjectURL(file);
+    const a=node('a');a.href=url;a.download=file.name;document.body.append(a);a.click();a.remove();
+    // Safari may need the blob alive until the save sheet has finished opening.
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    message.textContent='Экспорт запущен. Если iPhone не сохранил JSON, используйте «Поделиться JSON» → «Сохранить в Файлы».';
+  }
   get('sakugaExport').onclick=()=>{
-    const data=Sakuga.manifest(state);if(!data.items.length){message.textContent='Выберите и одобрите материалы для экспорта.';return;}
-    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
-    const a=node('a');a.href=url;a.download='anime_scout_sakugabooru_manifest.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    message.textContent=`Экспортировано ${data.items.length}. Это манифест, не команда скачивания.`;
+    const file=exportManifest();if(file)downloadManifest(file);
+  };
+  const share=node('button','Поделиться JSON (iPhone)');
+  share.className='secondary';share.type='button';
+  get('sakugaExport').insertAdjacentElement('afterend',share);
+  share.onclick=async()=>{
+    const file=exportManifest();if(!file)return;
+    if(typeof navigator.share==='function' && typeof navigator.canShare==='function' && navigator.canShare({files:[file]})){
+      try {
+        await navigator.share({files:[file],title:'Anime Scout — одобренные сцены'});
+        message.textContent='Меню передачи файла закрыто. Проверьте «Файлы» → выбранную папку.';
+      }catch(error){
+        if(error?.name==='AbortError'){message.textContent='Сохранение отменено.';return;}
+        message.textContent='Не удалось открыть меню iOS. Пробуем обычный экспорт.';
+        downloadManifest(file);
+      }
+    }else{
+      downloadManifest(file);
+    }
   };
   render();
 })();
