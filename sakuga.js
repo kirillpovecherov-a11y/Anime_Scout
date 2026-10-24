@@ -110,11 +110,25 @@ const Sakuga = (() => {
     finally{busy=false;get('sakugaSearch').disabled=false;}
   };
   get('sakugaSaved').onclick=()=>{visible=state.items.map(p=>p.id);render();};
-  get('sakugaExport').onclick=()=>{
+  get('sakugaExport').onclick=async()=>{
     const data=Sakuga.manifest(state);if(!data.items.length){message.textContent='Выберите и одобрите материалы для экспорта.';return;}
-    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
-    const a=node('a');a.href=url;a.download='anime_scout_sakugabooru_manifest.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    message.textContent=`Экспортировано ${data.items.length}. Это манифест, не команда скачивания.`;
+    const filename='anime_scout_sakugabooru_manifest.json';
+    const file=new File([JSON.stringify(data,null,2)],filename,{type:'application/json'});
+    // iOS standalone PWA/Safari can ignore programmatic blob downloads. Prefer native Share Sheet.
+    if(typeof navigator.share==='function' && typeof navigator.canShare==='function' && navigator.canShare({files:[file]})){
+      try {
+        await navigator.share({files:[file],title:'Anime Scout JSON'});
+        message.textContent='JSON передан в меню iOS. Выберите «Сохранить в Файлы» или другое приложение.';
+        return;
+      } catch(error){
+        if(error?.name==='AbortError'){message.textContent='Экспорт отменён.';return;}
+        // If sharing is unavailable at runtime, fall back to the normal browser download.
+      }
+    }
+    const url=URL.createObjectURL(file);
+    const a=node('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    message.textContent=`Запрошено скачивание JSON (${data.items.length} сцен). Если файл не появился, откройте сайт в Safari.`;
   };
   render();
 })();
