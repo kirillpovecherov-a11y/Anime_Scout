@@ -1,0 +1,7 @@
+name = "anime-scout-r2-upload"
+main = "r2-upload-worker.mjs"
+compatibility_date = "2026-10-01"
+
+[[r2_buckets]]
+binding = "VIDEO_BUCKET"
+bucket_name = "anime-scout-sources"
